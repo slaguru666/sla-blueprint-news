@@ -108,6 +108,19 @@ function mediaFromRoll(roll = 1) {
   return "GoreZone / Contract Circuit Special";
 }
 
+function clampNum(n, lo, hi) {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+/* For an open-ended band (Platinum has no max) we still need a finite slider
+   ceiling — three times the floor reads as "and up". */
+function basisBounds(range) {
+  const min = Number(range?.min ?? 0);
+  const openEnded = range?.max == null;
+  const max = openEnded ? Math.round(min * 3) : Number(range.max);
+  return { min, max, openEnded };
+}
+
 function rewardPackage(rng, colour, input) {
   const paymentTypeRoll = rollDie(rng, 6);
   const cbsTierRoll = rollDie(rng, 6);
@@ -119,12 +132,18 @@ function rewardPackage(rng, colour, input) {
   const paymentType = input.paymentType && input.paymentType !== "__RANDOM__"
     ? String(input.paymentType)
     : (paymentTypeRoll <= 4 ? "Per Squad" : "Per Operative");
-  const cbsTier = tierFromRoll(cbsTierRoll);
-  const sclTier = tierFromRoll(sclTierRoll);
 
-  const grossPerOp = creditsFromRange(colour.cbsPerOpRange, cbsTier);
-  const grossPerSquad = creditsFromRange(colour.cbsPerSquadRange, cbsTier);
-  const grossContractValue = paymentType === "Per Operative" ? grossPerOp * squadSize : grossPerSquad;
+  // Credits are expressed per the chosen payment basis (per Operative or per
+  // Squad). The slider runs across that band's range; an explicit cbsValue
+  // (from the slider) overrides the rolled default.
+  const basis = paymentType === "Per Operative" ? "op" : "squad";
+  const range = basis === "op" ? colour.cbsPerOpRange : colour.cbsPerSquadRange;
+  const { min: cbsMin, max: cbsMax, openEnded: cbsOpenEnded } = basisBounds(range);
+  const rolledBasis = creditsFromRange(range, tierFromRoll(cbsTierRoll));
+  const cbsBasisValue = input.cbsValue != null && Number.isFinite(Number(input.cbsValue))
+    ? clampNum(Math.round(Number(input.cbsValue)), cbsMin, cbsOpenEnded ? Math.max(cbsMax, Math.round(Number(input.cbsValue))) : cbsMax)
+    : clampNum(rolledBasis, cbsMin, cbsMax);
+  const grossContractValue = basis === "op" ? cbsBasisValue * squadSize : cbsBasisValue;
 
   const financierCutPercent = input.financierCutPercent
     ? Number(input.financierCutPercent)
@@ -132,22 +151,37 @@ function rewardPackage(rng, colour, input) {
   const netContract = Math.max(0, Math.round(grossContractValue * (1 - financierCutPercent / 100)));
   const takeHomeEach = Math.max(1, Math.floor(netContract / squadSize));
 
+  // SCL increase also runs across the band's range; an explicit sclIncrease
+  // (from the slider) overrides the rolled default.
+  const sclMin = Number(colour.sclRange?.min ?? 0.05);
+  const sclMax = Number(colour.sclRange?.max ?? colour.sclRange?.typical ?? 0.2);
   const sclByTier = {
-    low: Number(colour.sclRange?.min ?? 0.1),
-    mid: Number(colour.sclRange?.typical ?? colour.sclRange?.min ?? 0.1),
-    high: Number(colour.sclRange?.max ?? colour.sclRange?.typical ?? 0.2)
+    low: sclMin,
+    mid: Number(colour.sclRange?.typical ?? sclMin),
+    high: sclMax
   };
+  const sclIncreaseValue = input.sclIncrease != null && Number.isFinite(Number(input.sclIncrease))
+    ? clampNum(Number(input.sclIncrease), sclMin, sclMax)
+    : clampNum(sclByTier[tierFromRoll(sclTierRoll)] ?? sclByTier.mid, sclMin, sclMax);
 
   return {
     paymentType,
     squadSize,
+    basis,
+    cbsBasisValue,
+    cbsMin,
+    cbsMax,
+    cbsOpenEnded,
     grossContractValue,
     netContract,
     takeHomeEach,
     financierCutPercent,
     cbsBandOp: `${colour.cbsPerOpRange?.min ?? 0}c - ${colour.cbsPerOpRange?.max ?? "?"}c`,
     cbsBandSquad: `${colour.cbsPerSquadRange?.min ?? 0}c - ${colour.cbsPerSquadRange?.max ?? "?"}c`,
-    sclIncrease: formatScl(sclByTier[sclTier] ?? sclByTier.mid),
+    sclIncreaseValue,
+    sclMin,
+    sclMax,
+    sclIncrease: formatScl(sclIncreaseValue),
     mediaCoverage: input.mediaCoverage && input.mediaCoverage !== "__RANDOM__"
       ? String(input.mediaCoverage)
       : mediaFromRoll(mediaRoll),
@@ -214,16 +248,34 @@ function buildMissionBrief(b) {
   ].join(" ");
 }
 
+/* ---- SCL level ---------------------------------------------------------- */
+
+/** Operative Security Clearance Level: 10 (lowest) … 1 (highest). */
+function clampScl(n) {
+  const v = Number(n);
+  if (!Number.isFinite(v)) return 10;
+  return Math.max(1, Math.min(10, Math.round(v)));
+}
+
+/** A sensible default level per band — the top (easiest) end of its range. */
+function defaultSclFromBand(colour) {
+  const m = String(colour?.sclReq ?? "10").match(/\d+/);
+  return clampScl(m ? Number(m[0]) : 10);
+}
+
 /* ---- public API --------------------------------------------------------- */
 
 /**
  * Resolve a complete BPN from inputs.
  * @param {object} opts
- * @param {string} [opts.seed]      Reproducibility seed; one is generated if absent.
- * @param {string} [opts.colourKey] Force a colour band; otherwise rolled on the d20 table.
- * @param {string} [opts.frameId]   Force a scenario frame within the band.
- * @param {object} [opts.overrides] Any field to pin to a specific value (e.g. {location: "..."}).
- * @param {number} [opts.squadSize] Default 4.
+ * @param {string} [opts.seed]        Reproducibility seed; one is generated if absent.
+ * @param {string} [opts.colourKey]   Force a colour band; otherwise rolled on the d20 table.
+ * @param {string} [opts.frameId]     Force a scenario frame within the band.
+ * @param {number} [opts.squadSize]   Default 4.
+ * @param {number} [opts.sclLevel]    Operative SCL level 1–10; defaults to the band's top.
+ * @param {number} [opts.cbsValue]    Explicit credits for the chosen payment basis (slider).
+ * @param {number} [opts.sclIncrease] Explicit SCL increase reward (slider).
+ * @param {object} [opts.overrides]   Any field to pin to a specific value (e.g. {location: "..."}).
  */
 export function generateBPN(opts = {}) {
   const seed = take(opts.seed, randomSeed());
@@ -245,7 +297,14 @@ export function generateBPN(opts = {}) {
   const frames = framesForColour(colour.key);
   const frame = (opts.frameId && frames.find((f) => f.id === opts.frameId)) || pick(rng, frames);
 
-  const reward = rewardPackage(rng, colour, { squadSize: opts.squadSize ?? ov.squadSize, ...ov });
+  const reward = rewardPackage(rng, colour, {
+    squadSize: opts.squadSize ?? ov.squadSize,
+    ...ov,
+    cbsValue: opts.cbsValue ?? ov.cbsValue,
+    sclIncrease: opts.sclIncrease ?? ov.sclIncrease
+  });
+
+  const sclLevel = clampScl(opts.sclLevel ?? ov.sclLevel ?? defaultSclFromBand(colour));
 
   const contactName = take(
     ov.contactName,
@@ -262,7 +321,9 @@ export function generateBPN(opts = {}) {
     colour,
     issuingDepartment: take(ov.issuingDepartment, frame.issuingDepartment || pick(rng, TABLES.issuingDepartments)),
     squadSize: reward.squadSize,
-    sclRequirement: take(ov.sclRequirement, colour.sclReq),
+    sclLevel,
+    sclRequirement: take(ov.sclRequirement, `SCL ${sclLevel}`),
+    sclBandRange: colour.sclReq,
 
     contact: {
       name: contactName,
@@ -288,9 +349,17 @@ export function generateBPN(opts = {}) {
       financierCut: `${reward.financierCutPercent}%`,
       financierCutPercent: reward.financierCutPercent,
       sclIncrease: reward.sclIncrease,
+      sclIncreaseValue: reward.sclIncreaseValue,
+      sclMin: reward.sclMin,
+      sclMax: reward.sclMax,
       mediaCoverage: reward.mediaCoverage,
       cbsBandOp: reward.cbsBandOp,
-      cbsBandSquad: reward.cbsBandSquad
+      cbsBandSquad: reward.cbsBandSquad,
+      cbsBasis: reward.basis,
+      cbsBasisValue: reward.cbsBasisValue,
+      cbsMin: reward.cbsMin,
+      cbsMax: reward.cbsMax,
+      cbsOpenEnded: reward.cbsOpenEnded
     },
 
     // Seam for a future NPC/monster module: archetype keys only, no stat schema.

@@ -2,8 +2,9 @@
  * SLA Blueprint News — generator window (ApplicationV2 + Handlebars).
  *
  * Mirrors the standalone app over the vendored engine: pick band / frame /
- * squad / payment, watch a live preview, then Create Journals (a player-facing
- * Mission Brief page + a GM-only Dossier page) or Post to Chat.
+ * squad / payment, set the operative SCL level, dial the credits and SCL-
+ * increase rewards on sliders (live preview, no hardcoded numbers), then
+ * Create Journals (player Brief page + GM-only Dossier page) or Post to Chat.
  *
  * The render layer is engine-free; this file is the only Foundry-aware code.
  */
@@ -17,6 +18,14 @@ import { crestDataURI } from "../vendor/art/bpn-art.js";
 const MODULE_ID = "sla-blueprint-news";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
+const previewHTMLFor = (bpn, view) =>
+  view === "gm" ? dossierHTML(bpn, { artMode: "img" })
+    : view === "both" ? briefHTML(bpn, { artMode: "img" }) + dossierHTML(bpn, { artMode: "img" })
+      : briefHTML(bpn, { artMode: "img" });
+
+const cbsReadoutFor = (r) =>
+  `${r.cbsBasisValue}c ${r.cbsBasis === "op" ? "per Op" : "per Squad"}${r.cbsOpenEnded ? "+" : ""} · gross ${r.grossContractValue}c · ${r.takeHomeEach}`;
+
 export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) {
   state = {
     seed: randomSeed(),
@@ -24,6 +33,9 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
     frameId: "",
     squadSize: 4,
     paymentType: "",
+    sclLevel: null,     // null → core defaults per band
+    cbsValue: null,     // null → use the seed's rolled default
+    sclIncrease: null,
     view: "player"
   };
 
@@ -32,7 +44,7 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
     tag: "div",
     classes: ["sla-bpn-window"],
     window: { title: "SLABPN.Title", resizable: true, icon: "fas fa-file-contract" },
-    position: { width: 1080, height: 820 },
+    position: { width: 1080, height: 860 },
     actions: {
       reroll: BlueprintNewsApp.#onReroll,
       applySeed: BlueprintNewsApp.#onApplySeed,
@@ -54,32 +66,24 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
       colourKey: this.state.colourKey || undefined,
       frameId: this.state.frameId || undefined,
       squadSize: this.state.squadSize,
+      sclLevel: this.state.sclLevel ?? undefined,
+      cbsValue: this.state.cbsValue ?? undefined,
+      sclIncrease: this.state.sclIncrease ?? undefined,
       overrides: { paymentType: this.state.paymentType || "__RANDOM__" }
     });
   }
 
   async _prepareContext() {
     const bpn = this._bpn();
-    // keep state in step with what was actually rolled (band/frame/seed)
     this.state.seed = bpn.seed;
+    this.state.sclLevel = bpn.sclLevel; // reflect the resolved level in the select
 
-    const colourOptions = [
-      { key: "", label: "Any (roll d20)", selected: this.state.colourKey === "" }
-    ].concat(COLOURS.map((c) => ({
-      key: c.key,
-      label: `${c.label} — ${c.type}`,
-      selected: c.key === this.state.colourKey
-    })));
+    const colourOptions = [{ key: "", label: "Any (roll d20)", selected: this.state.colourKey === "" }]
+      .concat(COLOURS.map((c) => ({ key: c.key, label: `${c.label} — ${c.type}`, selected: c.key === this.state.colourKey })));
 
     const frames = this.state.colourKey ? framesForColour(this.state.colourKey) : [];
     const frameOptions = [{ id: "", label: "Any in band", selected: this.state.frameId === "" }]
       .concat(frames.map((f) => ({ id: f.id, label: f.shortTitle, selected: f.id === this.state.frameId })));
-
-    const previewHTML = this.state.view === "gm"
-      ? dossierHTML(bpn, { artMode: "img" })
-      : this.state.view === "both"
-        ? briefHTML(bpn, { artMode: "img" }) + dossierHTML(bpn, { artMode: "img" })
-        : briefHTML(bpn, { artMode: "img" });
 
     const paymentOptions = [
       { value: "", label: "Any" },
@@ -87,21 +91,28 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
       { value: "Per Operative", label: "Per Operative" }
     ].map((o) => ({ ...o, selected: o.value === this.state.paymentType }));
 
+    const sclOptions = [10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((n) => ({
+      value: n,
+      label: `SCL ${n}${n === 10 ? " (lowest)" : n === 1 ? " (highest)" : ""}`,
+      selected: n === bpn.sclLevel
+    }));
+
     const viewButtons = [
       { view: "player", label: "Player Brief" },
       { view: "gm", label: "GM Dossier" },
       { view: "both", label: "Both" }
     ].map((v) => ({ ...v, active: v.view === this.state.view }));
 
-    return {
-      state: this.state,
-      colourOptions,
-      frameOptions,
-      frameDisabled: !this.state.colourKey,
-      paymentOptions,
-      viewButtons,
-      previewHTML
+    const r = bpn.reward;
+    const reward = {
+      basisLabel: r.cbsBasis === "op" ? "per operative" : "per squad",
+      cbsMin: r.cbsMin, cbsMax: r.cbsMax, cbsValue: r.cbsBasisValue,
+      sclMin: r.sclMin, sclMax: r.sclMax, sclValue: r.sclIncreaseValue,
+      cbsReadout: cbsReadoutFor(r),
+      scliReadout: `${r.sclIncrease} SCL`
     };
+
+    return { state: this.state, colourOptions, frameOptions, paymentOptions, sclOptions, viewButtons, reward, previewHTML: previewHTMLFor(bpn, this.state.view) };
   }
 
   _onRender() {
@@ -109,18 +120,40 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
     root.querySelectorAll("[data-field]").forEach((el) => {
       el.addEventListener("change", () => {
         const f = el.dataset.field;
-        this.state[f] = f === "squadSize" ? Number(el.value) || 4 : el.value;
-        if (f === "colourKey") this.state.frameId = "";
+        if (f === "squadSize") this.state.squadSize = Number(el.value) || 4;
+        else if (f === "sclLevel") this.state.sclLevel = Number(el.value) || 10;
+        else this.state[f] = el.value;
+        // changing the band or payment basis resets the dialled rewards
+        if (f === "colourKey") { this.state.frameId = ""; this.state.cbsValue = null; this.state.sclIncrease = null; }
+        if (f === "paymentType") { this.state.cbsValue = null; this.state.sclIncrease = null; }
         this.render();
+      });
+    });
+    // sliders update the preview live, without a full re-render (keeps the grip)
+    root.querySelectorAll("[data-slider]").forEach((el) => {
+      el.addEventListener("input", () => {
+        this.state[el.dataset.slider] = Number(el.value);
+        this.#refreshPreview();
       });
     });
   }
 
-  static #onReroll() { this.state.seed = randomSeed(); this.render(); }
+  #refreshPreview() {
+    const bpn = this._bpn();
+    const host = this.element.querySelector(".sla-bpn-gen__preview");
+    if (host) host.innerHTML = previewHTMLFor(bpn, this.state.view);
+    const cbsR = this.element.querySelector('[data-readout="cbs"]');
+    const scliR = this.element.querySelector('[data-readout="scli"]');
+    if (cbsR) cbsR.textContent = cbsReadoutFor(bpn.reward);
+    if (scliR) scliR.textContent = `${bpn.reward.sclIncrease} SCL`;
+  }
+
+  static #onReroll() { this.state.seed = randomSeed(); this.state.cbsValue = null; this.state.sclIncrease = null; this.render(); }
 
   static #onApplySeed() {
     const v = this.element.querySelector('[data-field="seed"]')?.value?.trim();
     if (v) this.state.seed = v;
+    this.state.cbsValue = null; this.state.sclIncrease = null;
     this.render();
   }
 
@@ -128,10 +161,7 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
     try { await navigator.clipboard.writeText(this.state.seed); ui.notifications.info("Seed copied."); } catch (_) {}
   }
 
-  static #onView(event, target) {
-    this.state.view = target.dataset.view || "player";
-    this.render();
-  }
+  static #onView(event, target) { this.state.view = target.dataset.view || "player"; this.render(); }
 
   static async #onCreate() {
     const bpn = this._bpn();
@@ -142,7 +172,7 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
     const entry = await JournalEntry.create({
       name: `${bpn.colour.label} BPN — ${bpn.shortTitle}`,
       ownership: { default: O.OBSERVER },
-      flags: { [MODULE_ID]: { seed: bpn.seed, colourKey: bpn.colourKey, frameId: bpn.gm.frameId } },
+      flags: { [MODULE_ID]: { seed: bpn.seed, colourKey: bpn.colourKey, frameId: bpn.gm.frameId, sclLevel: bpn.sclLevel } },
       pages: [
         {
           name: "Mission Brief",
@@ -173,7 +203,7 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
         <div>
           <div class="bpn-chat-card__band">${bpn.colour.label} BPN · ${bpn.colour.type}</div>
           <div class="bpn-chat-card__title">${bpn.shortTitle}</div>
-          <div class="bpn-chat-card__meta">${bpn.bpnId} · SCL ${bpn.sclRequirement} · ${bpn.reward.grossContract}</div>
+          <div class="bpn-chat-card__meta">${bpn.bpnId} · ${bpn.sclRequirement} · ${bpn.reward.grossContract}</div>
         </div>
       </div>
       <p class="bpn-chat-card__brief">${foundry.utils.escapeHTML(bpn.missionBrief)}</p>

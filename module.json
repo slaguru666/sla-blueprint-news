@@ -2,7 +2,7 @@
   "id": "sla-blueprint-news",
   "title": "SLA Blueprint News",
   "description": "Generate SLA Industries BPN mission briefings as journal entries — a player-facing Brief and a separate GM-only Dossier, in the SLA house style with procedural artwork. Engine-agnostic core; this module is the Foundry wrapper.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "compatibility": {
     "minimum": "13",
     "verified": "14.361",

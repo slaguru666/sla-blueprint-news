@@ -48,6 +48,34 @@
 }
 .sla-bpn-gen__row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+.sla-bpn-gen__field input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #b88a24, #d6b24e);
+  cursor: pointer;
+}
+.sla-bpn-gen__field input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #f4efe5; border: 2px solid #b88a24; cursor: pointer;
+}
+.sla-bpn-gen__field input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: #f4efe5; border: 2px solid #b88a24; cursor: pointer;
+}
+.sla-bpn-gen__readout {
+  font-family: "Roboto Mono", monospace;
+  font-size: 0.72rem;
+  color: #d6b24e;
+  margin-top: 4px;
+}
+
 .sla-bpn-gen__btn {
   border-radius: 7px;
   border: 1px solid #2c333f;

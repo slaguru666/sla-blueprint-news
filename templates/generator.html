@@ -27,6 +27,25 @@
       </div>
     </div>
 
+    <div class="sla-bpn-gen__field">
+      <label>Operative SCL Level</label>
+      <select data-field="sclLevel">
+        {{#each sclOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+    </div>
+
+    <div class="sla-bpn-gen__field">
+      <label>Reward — {{reward.basisLabel}}</label>
+      <input type="range" data-slider="cbsValue" min="{{reward.cbsMin}}" max="{{reward.cbsMax}}" step="5" value="{{reward.cbsValue}}">
+      <div class="sla-bpn-gen__readout" data-readout="cbs">{{reward.cbsReadout}}</div>
+    </div>
+
+    <div class="sla-bpn-gen__field">
+      <label>SCL Increase Reward</label>
+      <input type="range" data-slider="sclIncrease" min="{{reward.sclMin}}" max="{{reward.sclMax}}" step="0.05" value="{{reward.sclValue}}">
+      <div class="sla-bpn-gen__readout" data-readout="scli">{{reward.scliReadout}}</div>
+    </div>
+
     <button type="button" class="sla-bpn-gen__btn sla-bpn-gen__btn--primary" data-action="reroll">
       <i class="fas fa-dice"></i> Re-roll (new seed)
     </button>
