@@ -1,0 +1,22 @@
+/* Bundled SLA Industries house faces — fully local, no network required.
+   Josefin Sans (display + UI) and Roboto Mono (data/labels) come from the
+   rewritten Google CSS; Modesto Condensed (heavy industrial wordmark) is
+   carried over from the SLA-BRP system. */
+
+@import url("fonts-google.css");
+
+@font-face {
+  font-family: "Modesto Condensed";
+  src: url("modesto-condensed.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Modesto Condensed";
+  src: url("modesto-condensed-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

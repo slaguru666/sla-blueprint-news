@@ -1,0 +1,390 @@
+/* Blueprint News — render layer styling.
+ *
+ * SLA Industries house look: heavy condensed uppercase titles, Roboto Mono
+ * data labels, dark slate panels, a single colour-band accent per brief, thin
+ * accent rules with inset glow, Third-Eye crest, stamp / redaction motifs.
+ *
+ * Two clearly distinct surfaces:
+ *   .bpn-brief   — the official corporate dispatch the squad is allowed to see
+ *   .bpn-dossier — the handler-only truth behind it (darker, "RESTRICTED")
+ *
+ * Sizing is rem-based and tuned for legibility on a small running laptop:
+ * body copy never drops below ~15px and stays high-contrast. Everything is
+ * scoped under .bpn so it can drop into any host without bleeding. */
+
+.bpn {
+  /* fonts */
+  --bpn-display: "Modesto Condensed", "Josefin Sans", "Oswald", sans-serif;
+  --bpn-head: "Josefin Sans", system-ui, sans-serif;
+  --bpn-body: "Josefin Sans", system-ui, sans-serif;
+  --bpn-mono: "Roboto Mono", ui-monospace, monospace;
+
+  /* palette (from the SLA-BRP system) */
+  --bpn-bg: #0d1117;
+  --bpn-panel: #161c26;
+  --bpn-panel-2: #1f2632;
+  --bpn-line: #3a4250;
+  --bpn-text: #eef3fa;
+  --bpn-muted: #9fb0c4;
+  --bpn-cream: #f4efe5;
+  --bpn-gold: #d6b24e;
+  --bpn-gold-deep: #b88a24;
+  --bpn-danger: #ff5b5b;
+
+  /* per-brief accent is set inline from the colour band */
+  --bpn-accent: #dce8f9;
+
+  color: var(--bpn-text);
+  font-family: var(--bpn-body);
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.bpn *,
+.bpn *::before,
+.bpn *::after { box-sizing: border-box; }
+
+/* ---------- shared atoms ------------------------------------------------- */
+
+.bpn-eyebrow {
+  font-family: var(--bpn-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--bpn-accent) 70%, var(--bpn-muted));
+  margin: 0;
+}
+
+.bpn-label {
+  display: block;
+  font-family: var(--bpn-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--bpn-accent) 50%, var(--bpn-muted));
+  margin-bottom: 4px;
+}
+
+.bpn-value { color: var(--bpn-text); font-size: 1rem; }
+
+.bpn-card {
+  position: relative;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--bpn-panel-2), var(--bpn-panel));
+  border: 1px solid var(--bpn-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.bpn-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  border-radius: 10px 0 0 10px;
+  background: linear-gradient(180deg, var(--bpn-accent), transparent);
+  opacity: 0.85;
+}
+
+.bpn-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+/* ---------- the document shell ------------------------------------------- */
+
+.bpn-doc {
+  max-width: 920px;
+  margin: 0 auto;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--bpn-line);
+  background: var(--bpn-bg);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+
+/* ===================== PLAYER BRIEF ===================== */
+
+.bpn-brief .bpn-hero {
+  position: relative;
+  min-height: 200px;
+  display: flex;
+  align-items: flex-end;
+  padding: 20px 22px;
+  isolation: isolate;
+}
+
+.bpn-brief .bpn-hero__art {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.bpn-brief .bpn-hero__art svg,
+.bpn-brief .bpn-hero__artimg { width: 100%; height: 100%; display: block; object-fit: cover; }
+
+.bpn-brief .bpn-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(0deg, rgba(7, 10, 16, 0.92) 8%, rgba(7, 10, 16, 0.35) 60%, transparent);
+}
+
+.bpn-hero__crest {
+  width: 92px;
+  height: 92px;
+  flex: 0 0 auto;
+  margin-right: 18px;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+.bpn-hero__crest svg,
+.bpn-hero__crest img { width: 100%; height: 100%; display: block; }
+
+.bpn-hero__copy { min-width: 0; }
+
+.bpn-hero__band {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bpn-accent) 22%, #0c1119);
+  border: 1px solid color-mix(in srgb, var(--bpn-accent) 60%, transparent);
+  font-family: var(--bpn-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--bpn-accent) 40%, #ffffff);
+  margin-bottom: 8px;
+}
+.bpn-hero__band b { color: color-mix(in srgb, var(--bpn-accent) 70%, #ffffff); }
+
+.bpn-hero__title {
+  font-family: var(--bpn-display);
+  font-weight: 700;
+  font-size: clamp(2.1rem, 6vw, 3.4rem);
+  line-height: 0.92;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin: 0;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.6);
+}
+
+.bpn-hero__sub {
+  margin: 6px 0 0;
+  font-family: var(--bpn-head);
+  color: var(--bpn-cream);
+  font-size: 1.02rem;
+  opacity: 0.92;
+}
+
+/* the corner "issued" stamp */
+.bpn-stamp {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  z-index: 1;
+  font-family: var(--bpn-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-align: right;
+  color: color-mix(in srgb, var(--bpn-accent) 55%, #fff);
+}
+.bpn-stamp b {
+  display: block;
+  padding: 2px 8px;
+  margin-top: 4px;
+  border: 1.5px solid color-mix(in srgb, var(--bpn-accent) 60%, transparent);
+  border-radius: 4px;
+  transform: rotate(-3deg);
+}
+
+/* fact strip under the hero */
+.bpn-facts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1px;
+  background: var(--bpn-line);
+  border-bottom: 1px solid var(--bpn-line);
+}
+.bpn-facts > div {
+  background: var(--bpn-panel);
+  padding: 12px 14px;
+}
+.bpn-facts .bpn-value {
+  font-family: var(--bpn-mono);
+  font-weight: 700;
+  font-size: 1.06rem;
+  color: color-mix(in srgb, var(--bpn-accent) 22%, var(--bpn-text));
+}
+
+.bpn-body { padding: 20px 22px 24px; display: grid; gap: 18px; }
+
+.bpn-section__title {
+  font-family: var(--bpn-head);
+  font-weight: 700;
+  font-size: 1.12rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0 0 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--bpn-line);
+  color: color-mix(in srgb, var(--bpn-accent) 30%, var(--bpn-text));
+}
+
+.bpn-brief-text {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  color: var(--bpn-text);
+}
+
+.bpn-objective {
+  border-left: 3px solid var(--bpn-accent);
+  padding: 10px 14px;
+  background: color-mix(in srgb, var(--bpn-accent) 8%, transparent);
+  border-radius: 0 8px 8px 0;
+}
+
+.bpn-contact {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 16px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, var(--bpn-panel-2), var(--bpn-panel));
+  border: 1px solid var(--bpn-line);
+}
+.bpn-contact__ident { width: 120px; height: 120px; }
+.bpn-contact__ident svg,
+.bpn-contact__ident img { width: 100%; height: 100%; display: block; }
+.bpn-contact__detail { display: grid; gap: 3px; }
+.bpn-contact__name {
+  font-family: var(--bpn-head);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: color-mix(in srgb, var(--bpn-accent) 22%, var(--bpn-text));
+}
+.bpn-contact__pos { color: var(--bpn-muted); font-size: 0.95rem; margin-top: 4px; }
+
+.bpn-footer {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 16px 22px;
+  border-top: 1px solid var(--bpn-line);
+  background: var(--bpn-panel);
+  font-family: var(--bpn-mono);
+}
+.bpn-footer .bpn-value { font-family: var(--bpn-head); font-size: 0.96rem; }
+
+/* ===================== GM DOSSIER ===================== */
+
+.bpn-dossier .bpn-doc { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55); }
+
+.bpn-dossier__banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 91, 91, 0.16) 0 12px, transparent 12px 24px),
+    #1a0f12;
+  border-bottom: 2px solid var(--bpn-danger);
+}
+.bpn-dossier__banner .bpn-eye {
+  width: 26px; height: 26px; flex: 0 0 auto;
+}
+.bpn-dossier__banner h2 {
+  margin: 0;
+  font-family: var(--bpn-display);
+  font-size: 1.5rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #ffd9d9;
+}
+.bpn-dossier__banner .bpn-eyebrow { color: #ff9b9b; margin-left: auto; }
+
+.bpn-dossier .bpn-body { padding: 18px 20px 22px; }
+
+.bpn-reveal {
+  position: relative;
+  padding: 14px 16px 14px 18px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #221a22, #161019);
+  border: 1px solid #4a2b3a;
+}
+.bpn-reveal::before {
+  content: "";
+  position: absolute; inset: 0 auto 0 0; width: 3px;
+  background: var(--bpn-danger);
+  border-radius: 10px 0 0 10px;
+}
+.bpn-reveal .bpn-label { color: #ff9b9b; }
+
+.bpn-twist { border-color: #6a2b2b; }
+.bpn-twist .bpn-label { color: var(--bpn-danger); }
+
+.bpn-threat-read {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 14px;
+  font-family: var(--bpn-mono);
+  font-size: 0.92rem;
+}
+.bpn-threat-read dt { color: var(--bpn-muted); letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.72rem; align-self: center; }
+.bpn-threat-read dd { margin: 0; color: var(--bpn-text); }
+
+/* NPC seam — clearly flagged as the hand-off point for the future module */
+.bpn-seam {
+  border: 1px dashed var(--bpn-line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+.bpn-seam .bpn-eyebrow { color: var(--bpn-gold); }
+.bpn-seam code {
+  font-family: var(--bpn-mono);
+  font-size: 0.86rem;
+  color: var(--bpn-gold);
+  background: rgba(214, 178, 78, 0.1);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.bpn-rolls {
+  font-family: var(--bpn-mono);
+  font-size: 0.78rem;
+  color: var(--bpn-muted);
+  letter-spacing: 0.04em;
+}
+
+/* ---------- responsive: small running laptop ----------------------------- */
+
+@media (max-width: 720px) {
+  .bpn { font-size: 15px; }
+  .bpn-facts { grid-template-columns: repeat(2, 1fr); }
+  .bpn-hero__crest { width: 64px; height: 64px; margin-right: 12px; }
+  .bpn-brief .bpn-hero { min-height: 150px; padding: 16px; }
+  .bpn-stamp { display: none; }
+  .bpn-contact { grid-template-columns: 88px 1fr; gap: 12px; }
+  .bpn-contact__ident { width: 88px; height: 88px; }
+}
+
+@media (max-width: 420px) {
+  .bpn-facts { grid-template-columns: 1fr 1fr; }
+  .bpn-hero__title { font-size: clamp(1.8rem, 9vw, 2.4rem); }
+}
+
+/* ---------- print / PDF export ------------------------------------------- */
+
+@media print {
+  .bpn { font-size: 12pt; }
+  .bpn-doc { box-shadow: none; border: 1px solid #000; max-width: 100%; }
+  .bpn-doc, .bpn-brief, .bpn-dossier { break-inside: avoid; }
+  .bpn-dossier { margin-top: 18px; }
+}

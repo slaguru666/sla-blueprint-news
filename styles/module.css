@@ -1,0 +1,155 @@
+/* SLA Blueprint News — generator window chrome + chat card.
+   The briefing surfaces themselves are styled by styles/bpn-render.css. */
+
+.sla-bpn-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: "Roboto Mono", monospace;
+  letter-spacing: 0.04em;
+}
+
+.sla-bpn-gen {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  height: 100%;
+  min-height: 0;
+  font-family: "Josefin Sans", system-ui, sans-serif;
+  color: #eef3fa;
+}
+
+.sla-bpn-gen__rail {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  background: #11161f;
+  border-right: 1px solid #2c333f;
+  overflow-y: auto;
+}
+
+.sla-bpn-gen__field { display: grid; gap: 5px; }
+.sla-bpn-gen__field > label {
+  font-family: "Roboto Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #9fb0c4;
+}
+.sla-bpn-gen__field select,
+.sla-bpn-gen__field input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 7px;
+  border: 1px solid #2c333f;
+  background: #0a0e14;
+  color: #eef3fa;
+  font-family: inherit;
+}
+.sla-bpn-gen__row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.sla-bpn-gen__btn {
+  border-radius: 7px;
+  border: 1px solid #2c333f;
+  background: #161c26;
+  color: #eef3fa;
+  font-family: inherit;
+  font-weight: 600;
+  padding: 9px 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.sla-bpn-gen__btn:hover { filter: brightness(1.14); }
+.sla-bpn-gen__btn--primary { border-color: #b88a24; }
+.sla-bpn-gen__btn--go {
+  border: 1px solid #b88a24;
+  background: linear-gradient(180deg, #d6b24e, #b88a24);
+  color: #1a1208;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.sla-bpn-gen__divider { height: 1px; background: #2c333f; }
+.sla-bpn-gen__hint { font-size: 0.78rem; color: #9fb0c4; line-height: 1.4; margin: 0; }
+.sla-bpn-gen__hint b { color: #d6b24e; }
+
+.sla-bpn-gen__stage {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: #0a0e14;
+}
+.sla-bpn-gen__viewtoggle {
+  display: flex;
+  gap: 2px;
+  justify-content: center;
+  padding: 12px;
+  border-bottom: 1px solid #2c333f;
+}
+.sla-bpn-gen__viewtoggle button {
+  border: 1px solid #2c333f;
+  background: #11161f;
+  color: #9fb0c4;
+  font-family: "Roboto Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 7px 16px;
+  cursor: pointer;
+}
+.sla-bpn-gen__viewtoggle button:first-child { border-radius: 999px 0 0 999px; }
+.sla-bpn-gen__viewtoggle button:last-child { border-radius: 0 999px 999px 0; }
+.sla-bpn-gen__viewtoggle button.is-active {
+  background: linear-gradient(180deg, #d6b24e, #b88a24);
+  color: #1a1208;
+  font-weight: 700;
+}
+.sla-bpn-gen__preview {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px;
+  display: grid;
+  gap: 22px;
+  align-content: start;
+}
+
+/* chat card */
+.bpn-chat-card {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--bpn-accent, #888);
+  background: linear-gradient(180deg, #161c26, #0d1117);
+}
+.bpn-chat-card__head {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--bpn-accent, #888) 22%, transparent), transparent 55%);
+}
+.bpn-chat-card__band {
+  font-family: "Roboto Mono", monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--bpn-accent, #888) 60%, #fff);
+}
+.bpn-chat-card__title {
+  font-family: "Modesto Condensed", "Josefin Sans", sans-serif;
+  font-size: 1.5rem;
+  text-transform: uppercase;
+  color: #fff;
+  line-height: 1;
+}
+.bpn-chat-card__meta { font-family: "Roboto Mono", monospace; font-size: 0.72rem; color: #9fb0c4; margin-top: 3px; }
+.bpn-chat-card__brief { padding: 10px 12px; margin: 0; color: #dfe7f1; font-size: 0.92rem; line-height: 1.45; }
+
+/* keep our briefing readable inside Foundry journal sheets */
+.journal-entry-content .bpn,
+.journal-sheet .bpn,
+.prose-mirror .bpn { color: #eef3fa; }

@@ -1,0 +1,63 @@
+<div class="sla-bpn-gen">
+  <aside class="sla-bpn-gen__rail">
+    <div class="sla-bpn-gen__field">
+      <label>Colour Band</label>
+      <select data-field="colourKey">
+        {{#each colourOptions}}<option value="{{key}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+    </div>
+
+    <div class="sla-bpn-gen__field">
+      <label>Scenario Frame</label>
+      <select data-field="frameId" {{#if frameDisabled}}disabled{{/if}}>
+        {{#each frameOptions}}<option value="{{id}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+      </select>
+    </div>
+
+    <div class="sla-bpn-gen__row">
+      <div class="sla-bpn-gen__field">
+        <label>Squad Size</label>
+        <input type="number" min="1" max="8" data-field="squadSize" value="{{state.squadSize}}">
+      </div>
+      <div class="sla-bpn-gen__field">
+        <label>Payment</label>
+        <select data-field="paymentType">
+          {{#each paymentOptions}}<option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>{{/each}}
+        </select>
+      </div>
+    </div>
+
+    <button type="button" class="sla-bpn-gen__btn sla-bpn-gen__btn--primary" data-action="reroll">
+      <i class="fas fa-dice"></i> Re-roll (new seed)
+    </button>
+
+    <div class="sla-bpn-gen__field">
+      <label>Seed</label>
+      <input type="text" data-field="seed" value="{{state.seed}}" spellcheck="false">
+      <div class="sla-bpn-gen__row" style="margin-top:6px;">
+        <button type="button" class="sla-bpn-gen__btn" data-action="applySeed">Apply</button>
+        <button type="button" class="sla-bpn-gen__btn" data-action="copySeed">Copy</button>
+      </div>
+    </div>
+
+    <div class="sla-bpn-gen__divider"></div>
+
+    <button type="button" class="sla-bpn-gen__btn sla-bpn-gen__btn--go" data-action="create">
+      <i class="fas fa-file-contract"></i> Create Journal
+    </button>
+    <button type="button" class="sla-bpn-gen__btn" data-action="chat">
+      <i class="fas fa-comment"></i> Post to Chat
+    </button>
+
+    <p class="sla-bpn-gen__hint">Creates one journal entry with a player-facing <b>Mission Brief</b> page and a GM-only <b>Dossier</b> page.</p>
+  </aside>
+
+  <main class="sla-bpn-gen__stage">
+    <div class="sla-bpn-gen__viewtoggle">
+      {{#each viewButtons}}
+      <button type="button" data-action="view" data-view="{{view}}" class="{{#if active}}is-active{{/if}}">{{label}}</button>
+      {{/each}}
+    </div>
+    <div class="sla-bpn-gen__preview bpn">{{{previewHTML}}}</div>
+  </main>
+</div>
