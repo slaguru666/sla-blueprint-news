@@ -1,6 +1,9 @@
 /* SLA Industries BPN colour bands — the spine of the whole system.
    Pure data, no engine or DOM dependencies. Each band carries its
-   classification, pay/SCL/media profile, and a render accent. */
+   classification, pay/SCL/media profile, and a render accent.
+
+   CBS pay ranges scale so the reward slider reaches up to ~2000c on standard
+   emergency work (Red), with Black/Platinum running higher. */
 
 export const COLOURS = [
   {
@@ -11,8 +14,8 @@ export const COLOURS = [
     details: "Sewer clearances, vermin extermination, infrastructure support, and low-end evictions.",
     sclReq: "10 - 9",
     sclRange: { min: 0.05, typical: 0.1, max: 0.2 },
-    cbsPerOpRange: { min: 50, max: 150 },
-    cbsPerSquadRange: { min: 100, max: 300 },
+    cbsPerOpRange: { min: 50, max: 300 },
+    cbsPerSquadRange: { min: 100, max: 600 },
     mediaCoverage: "Rare / None",
     accent: "#57b3ff"
   },
@@ -24,8 +27,8 @@ export const COLOURS = [
     details: "Primary objective is bring it back, often issued by Housing, Cloak, or Karma.",
     sclReq: "10 - 9",
     sclRange: { min: 0.05, typical: 0.1, max: 0.2 },
-    cbsPerOpRange: { min: 100, max: 200 },
-    cbsPerSquadRange: { min: 200, max: 400 },
+    cbsPerOpRange: { min: 100, max: 400 },
+    cbsPerSquadRange: { min: 200, max: 900 },
     mediaCoverage: "Station Analysis / None",
     accent: "#ffdb6e"
   },
@@ -37,8 +40,8 @@ export const COLOURS = [
     details: "Kill or capture designated threats before they escalate into full emergency response.",
     sclReq: "10 - 8",
     sclRange: { min: 0.1, typical: 0.1, max: 0.3 },
-    cbsPerOpRange: { min: 100, max: 250 },
-    cbsPerSquadRange: { min: 200, max: 500 },
+    cbsPerOpRange: { min: 150, max: 500 },
+    cbsPerSquadRange: { min: 300, max: 1100 },
     mediaCoverage: "Station Analysis / Third Eye",
     accent: "#78d48f"
   },
@@ -50,8 +53,8 @@ export const COLOURS = [
     details: "Evidence-led cases with witness work, profiling, and pattern analysis.",
     sclReq: "10 - 7",
     sclRange: { min: 0.1, typical: 0.1, max: 0.3 },
-    cbsPerOpRange: { min: 150, max: 300 },
-    cbsPerSquadRange: { min: 250, max: 500 },
+    cbsPerOpRange: { min: 200, max: 600 },
+    cbsPerSquadRange: { min: 400, max: 1300 },
     mediaCoverage: "Third Eye / Station Analysis",
     accent: "#dce8f9"
   },
@@ -63,8 +66,8 @@ export const COLOURS = [
     details: "Escort, asset protection, audit support, and departmentally awkward clean-ups.",
     sclReq: "9 - 7",
     sclRange: { min: 0.1, typical: 0.2, max: 0.3 },
-    cbsPerOpRange: { min: 200, max: 400 },
-    cbsPerSquadRange: { min: 300, max: 600 },
+    cbsPerOpRange: { min: 250, max: 700 },
+    cbsPerSquadRange: { min: 500, max: 1500 },
     mediaCoverage: "Station Analysis",
     accent: "#9da6b3"
   },
@@ -76,8 +79,8 @@ export const COLOURS = [
     details: "VIP escort, public appearances, negotiations, and camera-facing operations.",
     sclReq: "9 - 6",
     sclRange: { min: 0.1, typical: 0.2, max: 0.4 },
-    cbsPerOpRange: { min: 200, max: 500 },
-    cbsPerSquadRange: { min: 300, max: 800 },
+    cbsPerOpRange: { min: 300, max: 850 },
+    cbsPerSquadRange: { min: 600, max: 1700 },
     mediaCoverage: "Third Eye / GoreZone",
     accent: "#d7dee8"
   },
@@ -89,8 +92,8 @@ export const COLOURS = [
     details: "Biohazard incidents, toxic leaks, mutations, and containment failures.",
     sclReq: "9 - 6",
     sclRange: { min: 0.1, typical: 0.2, max: 0.4 },
-    cbsPerOpRange: { min: 250, max: 500 },
-    cbsPerSquadRange: { min: 400, max: 800 },
+    cbsPerOpRange: { min: 350, max: 900 },
+    cbsPerSquadRange: { min: 700, max: 1800 },
     mediaCoverage: "Third Eye / Contract Circuit",
     accent: "#41d0a3"
   },
@@ -102,8 +105,8 @@ export const COLOURS = [
     details: "Riots, terror incidents, major failures, and high-risk live-response deployments.",
     sclReq: "10 - 5",
     sclRange: { min: 0.1, typical: 0.2, max: 0.5 },
-    cbsPerOpRange: { min: 200, max: 500 },
-    cbsPerSquadRange: { min: 300, max: 1000 },
+    cbsPerOpRange: { min: 400, max: 1000 },
+    cbsPerSquadRange: { min: 800, max: 2000 },
     mediaCoverage: "Third Eye / GoreZone",
     accent: "#ff6f6f"
   },
@@ -115,8 +118,8 @@ export const COLOURS = [
     details: "Assassination, sabotage, deep infiltration, and disavowed clean-up actions.",
     sclReq: "7 - 4",
     sclRange: { min: 0.2, typical: 0.4, max: 0.7 },
-    cbsPerOpRange: { min: 500, max: 1000 },
-    cbsPerSquadRange: { min: 800, max: 2000 },
+    cbsPerOpRange: { min: 600, max: 1500 },
+    cbsPerSquadRange: { min: 1200, max: 3000 },
     mediaCoverage: "None (classified)",
     accent: "#9a7cff"
   },
@@ -129,7 +132,7 @@ export const COLOURS = [
     sclReq: "5 - 1",
     sclRange: { min: 0.3, typical: 0.5, max: 1.0 },
     cbsPerOpRange: { min: 1000, max: null },
-    cbsPerSquadRange: { min: 1500, max: null },
+    cbsPerSquadRange: { min: 2000, max: null },
     mediaCoverage: "Classified / Special",
     accent: "#f5f0d7"
   }

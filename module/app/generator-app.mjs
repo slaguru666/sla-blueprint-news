@@ -12,16 +12,19 @@
 import { generateBPN, randomSeed } from "../vendor/core/bpn-core.js";
 import { COLOURS } from "../vendor/core/data/colours.js";
 import { framesForColour } from "../vendor/core/data/frames.js";
-import { briefHTML, dossierHTML } from "../vendor/render/bpn-render.js";
+import { briefHTML, fieldDossierHTML, dossierHTML } from "../vendor/render/bpn-render.js";
 import { crestDataURI } from "../vendor/art/bpn-art.js";
 
 const MODULE_ID = "sla-blueprint-news";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
+const ART = { artMode: "img" };
 
-const previewHTMLFor = (bpn, view) =>
-  view === "gm" ? dossierHTML(bpn, { artMode: "img" })
-    : view === "both" ? briefHTML(bpn, { artMode: "img" }) + dossierHTML(bpn, { artMode: "img" })
-      : briefHTML(bpn, { artMode: "img" });
+const previewHTMLFor = (bpn, view) => {
+  if (view === "field") return fieldDossierHTML(bpn, ART);
+  if (view === "gm") return dossierHTML(bpn, ART);
+  if (view === "both") return briefHTML(bpn, ART) + fieldDossierHTML(bpn, ART) + dossierHTML(bpn, ART);
+  return briefHTML(bpn, ART);
+};
 
 const cbsReadoutFor = (r) =>
   `${r.cbsBasisValue}c ${r.cbsBasis === "op" ? "per Op" : "per Squad"}${r.cbsOpenEnded ? "+" : ""} · gross ${r.grossContractValue}c · ${r.takeHomeEach}`;
@@ -99,8 +102,9 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
 
     const viewButtons = [
       { view: "player", label: "Player Brief" },
+      { view: "field", label: "Field Dossier" },
       { view: "gm", label: "GM Dossier" },
-      { view: "both", label: "Both" }
+      { view: "both", label: "All" }
     ].map((v) => ({ ...v, active: v.view === this.state.view }));
 
     const r = bpn.reward;
@@ -168,31 +172,33 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
     const O = CONST.DOCUMENT_OWNERSHIP_LEVELS;
     const HTML = CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML;
     const wrap = (html) => `<div class="bpn">${html}</div>`;
+    const base = `${bpn.colour.label} BPN — ${bpn.shortTitle}`;
+    const flags = { [MODULE_ID]: { seed: bpn.seed, colourKey: bpn.colourKey, frameId: bpn.gm.frameId, sclLevel: bpn.sclLevel } };
+    const page = (name, content, owner) => ({ name, type: "text", title: { show: false, level: 1 }, ownership: { default: owner }, text: { format: HTML, content } });
 
-    const entry = await JournalEntry.create({
-      name: `${bpn.colour.label} BPN — ${bpn.shortTitle}`,
+    // Separate player document: the Mission Brief + the Field Dossier handout.
+    const playerEntry = await JournalEntry.create({
+      name: `${base} [Player]`,
       ownership: { default: O.OBSERVER },
-      flags: { [MODULE_ID]: { seed: bpn.seed, colourKey: bpn.colourKey, frameId: bpn.gm.frameId, sclLevel: bpn.sclLevel } },
+      flags,
       pages: [
-        {
-          name: "Mission Brief",
-          type: "text",
-          title: { show: false, level: 1 },
-          ownership: { default: O.OBSERVER },
-          text: { format: HTML, content: wrap(briefHTML(bpn, { artMode: "img" })) }
-        },
-        {
-          name: "GM Dossier",
-          type: "text",
-          title: { show: false, level: 1 },
-          ownership: { default: O.NONE },
-          text: { format: HTML, content: wrap(dossierHTML(bpn, { artMode: "img" })) }
-        }
+        page("Mission Brief", wrap(briefHTML(bpn, ART)), O.OBSERVER),
+        page("Field Dossier", wrap(fieldDossierHTML(bpn, ART)), O.OBSERVER)
       ]
     });
 
-    ui.notifications.info(`Created BPN journal "${entry.name}" (player Brief + GM Dossier page).`);
-    entry.sheet?.render(true);
+    // Separate GM-only document, linked back to the player document.
+    const gmEntry = await JournalEntry.create({
+      name: `${base} [GM]`,
+      ownership: { default: O.NONE },
+      flags,
+      pages: [
+        page("GM Dossier", wrap(dossierHTML(bpn, ART)) + `<p class="bpn-rolls">Player document: @UUID[${playerEntry.uuid}]{${base} [Player]}</p>`, O.NONE)
+      ]
+    });
+
+    ui.notifications.info(`Created "${base}": a player document (Brief + Field Dossier) and a separate GM document.`);
+    gmEntry.sheet?.render(true);
   }
 
   static async #onChat() {

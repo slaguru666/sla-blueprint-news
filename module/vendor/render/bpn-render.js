@@ -12,8 +12,8 @@
  */
 
 import {
-  crestSVG, bannerSVG, portraitSVG,
-  crestDataURI, bannerDataURI, portraitDataURI
+  crestSVG, bannerSVG, portraitSVG, siteMapSVG,
+  crestDataURI, bannerDataURI, portraitDataURI, siteMapDataURI
 } from "../art/bpn-art.js";
 
 function esc(value) {
@@ -120,6 +120,65 @@ export function briefHTML(bpn, { art = true, artMode = "inline" } = {}) {
 </article>`;
 }
 
+/* ---------------- PLAYER FIELD DOSSIER ---------------- */
+/* A separate player-facing document: the cast, OTEM and locations the squad
+   are cleared to know, with a schematic site map. The GM-only secrets for the
+   same entries live in the GM Dossier. */
+
+function castRow(n) {
+  return `<div class="bpn-detail-item">
+    <div class="bpn-detail-item__name">${esc(n.name)}</div>
+    <div class="bpn-detail-item__role">${esc(n.role)}</div>
+    <div class="bpn-detail-item__line">${esc(n.player)}</div>
+  </div>`;
+}
+
+function otemRow(o) {
+  return `<div class="bpn-detail-item">
+    <div class="bpn-detail-item__name">${esc(o.name)}</div>
+    <div class="bpn-detail-item__line">${esc(o.player)}</div>
+  </div>`;
+}
+
+function siteRow(s, i) {
+  return `<div class="bpn-detail-item">
+    <div class="bpn-detail-item__name"><span class="bpn-site-no">${i + 1}</span>${esc(s.name)}</div>
+    <div class="bpn-detail-item__line">${esc(s.player)}</div>
+  </div>`;
+}
+
+export function fieldDossierHTML(bpn, { artMode = "inline" } = {}) {
+  const c = bpn.colour;
+  const map = artMode === "img"
+    ? `<img class="bpn-sitemap__img" src="${siteMapDataURI(bpn, { width: 640, height: 320 })}" alt="sector schematic">`
+    : siteMapSVG(bpn, { width: 640, height: 320 });
+
+  return `<article class="bpn-field" style="--bpn-accent:${esc(c.accent)};">
+  <div class="bpn-doc">
+    <header class="bpn-field__head">
+      <span class="bpn-hero__band"><b>${esc(c.label)}</b> Field Dossier</span>
+      <h2 class="bpn-field__title">${esc(bpn.shortTitle)} — Operative Pack</h2>
+      <p class="bpn-field__sub">Player reference: who you'll meet, what's in play, and where. Cleared for squad eyes.</p>
+    </header>
+    <div class="bpn-body">
+      <section>
+        <h2 class="bpn-section__title">Cast on the Ground</h2>
+        <div class="bpn-detail-list">${bpn.cast.map(castRow).join("")}</div>
+      </section>
+      <section>
+        <h2 class="bpn-section__title">OTEM · Items &amp; Equipment</h2>
+        <div class="bpn-detail-list">${bpn.otem.map(otemRow).join("")}</div>
+      </section>
+      <section>
+        <h2 class="bpn-section__title">Key Locations</h2>
+        <div class="bpn-sitemap">${map}</div>
+        <div class="bpn-detail-list">${bpn.sites.map(siteRow).join("")}</div>
+      </section>
+    </div>
+  </div>
+</article>`;
+}
+
 /* ---------------- GM DOSSIER ---------------- */
 
 export function dossierHTML(bpn, { artMode = "inline" } = {}) {
@@ -183,6 +242,15 @@ export function dossierHTML(bpn, { artMode = "inline" } = {}) {
         </div>
       </section>
 
+      <section>
+        <h2 class="bpn-section__title">Cast · OTEM · Sites — GM Notes</h2>
+        <div class="bpn-gmnotes">
+          ${bpn.cast.map((n) => `<div class="bpn-gmnote"><span class="bpn-gmnote__k">${esc(n.name)} — ${esc(n.role)}</span><span class="bpn-gmnote__v">${esc(n.gm)}</span></div>`).join("")}
+          ${bpn.otem.map((o) => `<div class="bpn-gmnote"><span class="bpn-gmnote__k">${esc(o.name)}</span><span class="bpn-gmnote__v">${esc(o.gm)}</span></div>`).join("")}
+          ${bpn.sites.map((s, i) => `<div class="bpn-gmnote"><span class="bpn-gmnote__k">${i + 1}. ${esc(s.name)}</span><span class="bpn-gmnote__v">${esc(s.gm)}</span></div>`).join("")}
+        </div>
+      </section>
+
       ${seamRow}
 
       <p class="bpn-rolls">Seed ${esc(bpn.seed)} &middot; frame ${esc(g.frameId)} &middot; rolls: colour ${esc(r.colour ?? 0)}, pay ${esc(r.paymentType ?? 0)}, CBS ${esc(r.cbsTier ?? 0)}, SCL ${esc(r.sclTier ?? 0)}, media ${esc(r.media ?? 0)}, financier ${esc(r.financier ?? 0)}.</p>
@@ -207,10 +275,17 @@ export function renderDossier(bpn, el) {
   root.innerHTML = dossierHTML(bpn);
 }
 
-/* Render both surfaces into one element (used for the print / "both" view). */
+export function renderField(bpn, el, opts) {
+  const root = typeof el === "string" ? document.querySelector(el) : el;
+  if (!root) return;
+  root.classList.add("bpn");
+  root.innerHTML = fieldDossierHTML(bpn, opts);
+}
+
+/* Render all three surfaces into one element (the print / "all" view). */
 export function renderBoth(bpn, el, opts) {
   const root = typeof el === "string" ? document.querySelector(el) : el;
   if (!root) return;
   root.classList.add("bpn");
-  root.innerHTML = briefHTML(bpn, opts) + dossierHTML(bpn);
+  root.innerHTML = briefHTML(bpn, opts) + fieldDossierHTML(bpn, opts) + dossierHTML(bpn, opts);
 }

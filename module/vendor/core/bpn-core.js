@@ -11,6 +11,7 @@
 import { COLOURS, COLOUR_ROLL_TABLE, colourByKey } from "./data/colours.js";
 import { TABLES, COLOUR_MISSION_IDEAS } from "./data/tables.js";
 import { framesForColour } from "./data/frames.js";
+import { DETAIL } from "./data/detail.js";
 
 /* ---- seeded randomness -------------------------------------------------- */
 
@@ -248,6 +249,66 @@ function buildMissionBrief(b) {
   ].join(" ");
 }
 
+/* ---- expanded detail: cast / OTEM / sites ------------------------------- */
+
+/** Pick n distinct entries from arr (deterministic via rng). */
+function sample(rng, arr, n) {
+  const pool = [...arr];
+  const out = [];
+  for (let i = 0; i < n && pool.length; i++) {
+    out.push(pool.splice(Math.floor(rng() * pool.length), 1)[0]);
+  }
+  return out;
+}
+
+function ucFirst(s = "") {
+  const v = String(s);
+  return v.charAt(0).toUpperCase() + v.slice(1);
+}
+
+/** Build the cast, OTEM and locations for a briefing. Each entry carries a
+ *  player-facing `player` line and a GM-only `gm` secret. */
+function buildDetail(rng, ctx) {
+  const cast = [];
+  // The on-site contact and the reported threat are always part of the cast.
+  cast.push({
+    name: ctx.contactName,
+    role: ctx.contactRole,
+    player: `On-site contact, holding at ${lcFirst(trimEnd(ctx.contactLocation))}.`,
+    gm: pick(rng, DETAIL.npcSecrets)
+  });
+  cast.push({
+    name: ctx.threatLead || "Reported hostile",
+    role: "Designated threat",
+    player: ctx.threatCount || "Hostile lead flagged by command.",
+    gm: ctx.oppositionAttitude ? `Really: ${lcFirst(ctx.oppositionAttitude)}` : pick(rng, DETAIL.npcSecrets)
+  });
+  // Plus two generated supporting NPCs.
+  for (let i = 0; i < 2; i++) {
+    const role = pick(rng, DETAIL.npcRoles);
+    cast.push({
+      name: `${pick(rng, TABLES.contactFirstNames)} ${pick(rng, TABLES.contactLastNames)}`,
+      role,
+      player: `${pick(rng, DETAIL.npcDispositions)} ${role.toLowerCase()}. ${pick(rng, DETAIL.npcPlayerNotes)}`,
+      gm: pick(rng, DETAIL.npcSecrets)
+    });
+  }
+
+  const otem = sample(rng, DETAIL.otemNames, 3).map((name) => ({
+    name,
+    player: pick(rng, DETAIL.otemPlayerNotes),
+    gm: pick(rng, DETAIL.otemSecrets)
+  }));
+
+  const sites = sample(rng, DETAIL.siteNames, 3).map((name) => ({
+    name: ucFirst(name),
+    player: pick(rng, DETAIL.sitePlayerNotes),
+    gm: pick(rng, DETAIL.siteSecrets)
+  }));
+
+  return { cast, otem, sites };
+}
+
 /* ---- SCL level ---------------------------------------------------------- */
 
 /** Operative Security Clearance Level: 10 (lowest) … 1 (highest). */
@@ -384,5 +445,20 @@ export function generateBPN(opts = {}) {
   };
 
   bpn.missionBrief = take(ov.missionBrief, buildMissionBrief(bpn));
+
+  // Expanded detail for the separate player Field Dossier (player lines) and
+  // the GM Dossier (secrets). Built last so it can read the resolved cast.
+  const detail = buildDetail(rng, {
+    contactName: bpn.contact.name,
+    contactRole: bpn.contact.role,
+    contactLocation: bpn.contact.location,
+    threatLead: bpn.gm.threatLead,
+    threatCount: bpn.gm.threatCountLabel,
+    oppositionAttitude: bpn.gm.oppositionAttitude
+  });
+  bpn.cast = detail.cast;
+  bpn.otem = detail.otem;
+  bpn.sites = detail.sites;
+
   return bpn;
 }

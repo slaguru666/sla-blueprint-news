@@ -1,12 +1,18 @@
 # SLA Blueprint News (Foundry VTT module)
 
 Generate SLA Industries **BPN** mission briefings inside Foundry. Each briefing
-is created as a **single journal entry** with two pages:
+creates **two separate journal entries**:
 
-- **Mission Brief** — player-facing (default ownership *Observer*), the official
-  corporate dispatch.
-- **GM Dossier** — GM-only (ownership *None* for players): the twist, the
-  withheld fact, the true threat read, levers, and the dice state.
+- **`… [Player]`** (ownership *Observer*) — a player document with two pages:
+  - **Mission Brief** — the official corporate dispatch.
+  - **Field Dossier** — a player handout: the cast (NPCs), OTEM (items &
+    equipment), and key locations with a schematic site map.
+- **`… [GM]`** (ownership *None* for players) — the GM document: the twist, the
+  withheld fact, the true threat read, levers, dice state, and the GM-only
+  secrets for every NPC / item / location, linked back to the player document.
+
+The GM picks the operative **SCL level** and dials the **credits** and **SCL
+increase** rewards on sliders (pay scales up to ~2000c on standard work).
 
 Styled in the SLA house look with bundled local fonts and **procedural artwork**
 generated per briefing (flat, non-photorealistic). NPC/monster generation is a

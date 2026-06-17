@@ -331,6 +331,58 @@ export function portraitSVG(bpn, { size = 120 } = {}) {
 </svg>`;
 }
 
+/* ------------------------------------------------------------------------ */
+/* SITE MAP — a schematic, non-photorealistic sector diagram for the Field   */
+/* Dossier. Numbered nodes (one per location) wired along a route over a     */
+/* faint grid, with an entry marker. Labels live in the dossier list.        */
+/* ------------------------------------------------------------------------ */
+
+export function siteMapSVG(bpn, { width = 640, height = 320 } = {}) {
+  const accent = bpn?.colour?.accent ?? "#dce8f9";
+  const seed = bpn?.seed ?? "BPN";
+  const uid = String(seed).replace(/[^A-Za-z0-9]/g, "") + "m";
+  const rng = rngFor(seed, "map");
+  const dark = "#0b1018";
+  const sites = Array.isArray(bpn?.sites) && bpn.sites.length ? bpn.sites : [{}, {}, {}];
+  const n = sites.length;
+  const W = width, H = height;
+  const mx = 70, my = 64;
+
+  // node positions: spread along x, seeded y within the band
+  const nodes = sites.map((_, i) => ({
+    x: mx + (n === 1 ? (W - 2 * mx) / 2 : (i * (W - 2 * mx)) / (n - 1)),
+    y: my + rfloat(rng, 0, H - 2 * my)
+  }));
+
+  // route polyline through the nodes
+  const route = nodes.map((p, i) => `${i ? "L" : "M"}${r2(p.x)} ${r2(p.y)}`).join(" ");
+
+  const nodeMarks = nodes.map((p, i) => `
+    <g transform="translate(${r2(p.x)} ${r2(p.y)})">
+      <circle r="16" fill="${dark}" stroke="${accent}" stroke-width="2.5"/>
+      <circle r="22" fill="none" stroke="${rgba(accent, 0.25)}" stroke-width="1"/>
+      <text x="0" y="5" text-anchor="middle" font-family="Roboto Mono, monospace" font-size="15" font-weight="700" fill="${mix(accent, "#ffffff", 0.3)}">${i + 1}</text>
+    </g>`).join("");
+
+  // entry chevron at the first node
+  const e = nodes[0];
+  const entry = `<g transform="translate(${r2(e.x - 30)} ${r2(e.y)})"><path d="M-10 -8 L2 0 L-10 8" fill="none" stroke="${accent}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><text x="-12" y="-12" text-anchor="end" font-family="Roboto Mono, monospace" font-size="10" letter-spacing="1.5" fill="${rgba(accent, 0.7)}">ENTRY</text></g>`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="sector schematic">
+  <defs>
+    <linearGradient id="mg-${uid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix(dark, accent, 0.10)}"/><stop offset="1" stop-color="#05080d"/></linearGradient>
+    <pattern id="grid-${uid}" width="28" height="28" patternUnits="userSpaceOnUse"><path d="M28 0 H0 V28" fill="none" stroke="${rgba(accent, 0.10)}" stroke-width="1"/></pattern>
+  </defs>
+  <rect width="${W}" height="${H}" rx="10" fill="url(#mg-${uid})"/>
+  <rect width="${W}" height="${H}" rx="10" fill="url(#grid-${uid})"/>
+  <rect x="1" y="1" width="${W - 2}" height="${H - 2}" rx="10" fill="none" stroke="${rgba(accent, 0.4)}" stroke-width="1.5"/>
+  <text x="18" y="28" font-family="Roboto Mono, monospace" font-size="11" letter-spacing="2" fill="${rgba(accent, 0.75)}">SECTOR SCHEMATIC // ${String(bpn?.bpnId ?? "")}</text>
+  <path d="${route}" fill="none" stroke="${rgba(accent, 0.55)}" stroke-width="2" stroke-dasharray="2 6" stroke-linecap="round"/>
+  ${entry}
+  ${nodeMarks}
+</svg>`;
+}
+
 /* Convenience: data URIs (handy as <img> srcs or journal icons, and required
    in hosts that sanitise inline <svg> such as Foundry journal pages). */
 export function crestDataURI(bpn, opts) {
@@ -341,4 +393,7 @@ export function bannerDataURI(bpn, opts) {
 }
 export function portraitDataURI(bpn, opts) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(portraitSVG(bpn, opts))}`;
+}
+export function siteMapDataURI(bpn, opts) {
+  return `data:image/svg+xml;utf8,${encodeURIComponent(siteMapSVG(bpn, opts))}`;
 }
