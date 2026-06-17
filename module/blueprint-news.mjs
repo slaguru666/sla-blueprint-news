@@ -33,27 +33,32 @@ Hooks.on("renderJournalDirectory", (_app, html) => {
   header.appendChild(btn);
 });
 
-/* Notes-layer toolbar button as a second entry point (v13/v14 control shape). */
+/* Token-group toolbar button (GM only). v14 controls is a keyed object and
+   tools fire via onChange; v13 is an array. */
 Hooks.on("getSceneControlButtons", (controls) => {
   if (!game.user?.isGM) return;
+  const open = () => BlueprintNewsApp.open();
   const tool = {
     name: "slaBpnOpen",
     title: game.i18n.localize("SLABPN.ToolbarOpen"),
     icon: "fas fa-file-contract",
+    visible: true,
     button: true,
-    onClick: () => BlueprintNewsApp.open()
+    toggle: false,
+    onChange: open,
+    onClick: open
   };
-  if (controls && typeof controls === "object" && !Array.isArray(controls)) {
-    const notes = controls.notes;
-    if (notes) {
-      notes.tools ??= {};
-      notes.tools[tool.name] ??= tool;
+  if (controls && !Array.isArray(controls)) {
+    const grp = controls.tokens ?? controls.token ?? null;
+    if (grp) {
+      grp.tools ??= {};
+      grp.tools[tool.name] = tool;
     }
-  } else if (Array.isArray(controls)) {
-    const notes = controls.find((c) => c.name === "notes");
-    if (notes) {
-      notes.tools ??= [];
-      if (!notes.tools.some((t) => t.name === tool.name)) notes.tools.push(tool);
-    }
+    return;
+  }
+  const grp = controls.find((c) => c.name === "token" || c.name === "tokens");
+  if (grp) {
+    if (Array.isArray(grp.tools)) grp.tools.push(tool);
+    else { grp.tools ??= {}; grp.tools[tool.name] = tool; }
   }
 });
