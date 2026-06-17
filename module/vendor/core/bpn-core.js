@@ -266,36 +266,72 @@ function ucFirst(s = "") {
   return v.charAt(0).toUpperCase() + v.slice(1);
 }
 
-/** Build the cast, OTEM and locations for a briefing. Each entry carries a
- *  player-facing `player` line and a GM-only `gm` secret. */
-function buildDetail(rng, ctx) {
-  const cast = [];
-  // The on-site contact and the reported threat are always part of the cast.
-  cast.push({
-    name: ctx.contactName,
-    role: ctx.contactRole,
-    player: `On-site contact, holding at ${lcFirst(trimEnd(ctx.contactLocation))}.`,
-    gm: pick(rng, DETAIL.npcSecrets)
-  });
-  cast.push({
-    name: ctx.threatLead || "Reported hostile",
-    role: "Designated threat",
-    player: ctx.threatCount || "Hostile lead flagged by command.",
-    gm: ctx.oppositionAttitude ? `Really: ${lcFirst(ctx.oppositionAttitude)}` : pick(rng, DETAIL.npcSecrets)
-  });
-  // Plus two generated supporting NPCs.
-  for (let i = 0; i < 2; i++) {
-    const role = pick(rng, DETAIL.npcRoles);
-    cast.push({
-      name: `${pick(rng, TABLES.contactFirstNames)} ${pick(rng, TABLES.contactLastNames)}`,
-      role,
-      player: `${pick(rng, DETAIL.npcDispositions)} ${role.toLowerCase()}. ${pick(rng, DETAIL.npcPlayerNotes)}`,
-      gm: pick(rng, DETAIL.npcSecrets)
-    });
-  }
+/** Classify an OTEM name into an icon category for the line-art item icon. */
+function otemCategory(name = "") {
+  const n = String(name).toLowerCase();
+  if (n.includes("slate") || n.includes("data")) return "slate";
+  if (n.includes("canister") || n.includes("sample")) return "canister";
+  if (n.includes("weapon") || n.includes("cache")) return "weapon";
+  if (n.includes("chip") || n.includes("credential")) return "chip";
+  if (n.includes("crate") || n.includes("evidence")) return "crate";
+  if (n.includes("bug") || n.includes("surveillance")) return "bug";
+  if (n.includes("component") || n.includes("prototype")) return "component";
+  if (n.includes("relay") || n.includes("comms")) return "relay";
+  if (n.includes("med") || n.includes("kit")) return "kit";
+  if (n.includes("drone") || n.includes("camera")) return "drone";
+  if (n.includes("key")) return "key";
+  if (n.includes("card") || n.includes("id")) return "card";
+  return "slate";
+}
 
-  const otem = sample(rng, DETAIL.otemNames, 3).map((name) => ({
+/** Build the cast, OTEM and locations. Each NPC is a small character sheet
+ *  (description, significance, appearance + a stable seed for its portrait);
+ *  each item carries a description + category for its line-art icon. Player
+ *  facing fields plus a GM-only `gm` secret. */
+function buildDetail(rng, ctx) {
+  const makeNpc = (i, base) => {
+    const build = pick(rng, DETAIL.npcBuilds);
+    const feature = pick(rng, DETAIL.npcFeatures);
+    const habit = pick(rng, DETAIL.npcHabits);
+    const role = base.role ?? pick(rng, DETAIL.npcRoles);
+    return {
+      seed: `${ctx.seed}::npc::${i}`,
+      name: base.name,
+      role,
+      disposition: base.disposition ?? pick(rng, DETAIL.npcDispositions),
+      appearance: { build, feature, habit },
+      description: `${ucFirst(build)} ${role.toLowerCase()} with ${feature}; ${habit}.`,
+      significance: base.significance ?? pick(rng, DETAIL.npcSignificance),
+      player: base.player ?? pick(rng, DETAIL.npcPlayerNotes),
+      gm: base.gm ?? pick(rng, DETAIL.npcSecrets)
+    };
+  };
+
+  const cast = [
+    makeNpc(0, {
+      name: ctx.contactName,
+      role: ctx.contactRole,
+      disposition: "Cooperative",
+      significance: "The squad's authorised contact on the ground.",
+      player: `On-site contact, holding at ${lcFirst(trimEnd(ctx.contactLocation))}.`
+    }),
+    makeNpc(1, {
+      name: ctx.threatLead || "Reported hostile",
+      role: "Designated threat",
+      disposition: "Openly hostile",
+      significance: "The hostile command flagged as the squad's primary problem.",
+      player: ctx.threatCount || "Hostile lead flagged by command.",
+      gm: ctx.oppositionAttitude ? `Really: ${lcFirst(ctx.oppositionAttitude)}` : pick(rng, DETAIL.npcSecrets)
+    }),
+    makeNpc(2, { name: `${pick(rng, TABLES.contactFirstNames)} ${pick(rng, TABLES.contactLastNames)}` }),
+    makeNpc(3, { name: `${pick(rng, TABLES.contactFirstNames)} ${pick(rng, TABLES.contactLastNames)}` })
+  ];
+
+  const otem = sample(rng, DETAIL.otemNames, 3).map((name, i) => ({
+    seed: `${ctx.seed}::otem::${i}`,
     name,
+    category: otemCategory(name),
+    description: pick(rng, DETAIL.otemDescriptions),
     player: pick(rng, DETAIL.otemPlayerNotes),
     gm: pick(rng, DETAIL.otemSecrets)
   }));
@@ -449,6 +485,7 @@ export function generateBPN(opts = {}) {
   // Expanded detail for the separate player Field Dossier (player lines) and
   // the GM Dossier (secrets). Built last so it can read the resolved cast.
   const detail = buildDetail(rng, {
+    seed,
     contactName: bpn.contact.name,
     contactRole: bpn.contact.role,
     contactLocation: bpn.contact.location,

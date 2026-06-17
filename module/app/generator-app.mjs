@@ -12,8 +12,8 @@
 import { generateBPN, randomSeed } from "../vendor/core/bpn-core.js";
 import { COLOURS } from "../vendor/core/data/colours.js";
 import { framesForColour } from "../vendor/core/data/frames.js";
-import { briefHTML, fieldDossierHTML, dossierHTML } from "../vendor/render/bpn-render.js";
-import { crestDataURI } from "../vendor/art/bpn-art.js";
+import { briefHTML, fieldDossierHTML, dossierHTML, npcCardHTML, itemCardHTML } from "../vendor/render/bpn-render.js";
+import { crestDataURI, npcPortraitDataURI, itemIconDataURI } from "../vendor/art/bpn-art.js";
 
 const MODULE_ID = "sla-blueprint-news";
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -171,16 +171,19 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
     const bpn = this._bpn();
     const O = CONST.DOCUMENT_OWNERSHIP_LEVELS;
     const HTML = CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML;
+    const accent = bpn.colour.accent;
     const wrap = (html) => `<div class="bpn">${html}</div>`;
     const base = `${bpn.colour.label} BPN — ${bpn.shortTitle}`;
     const flags = { [MODULE_ID]: { seed: bpn.seed, colourKey: bpn.colourKey, frameId: bpn.gm.frameId, sclLevel: bpn.sclLevel } };
     const page = (name, content, owner) => ({ name, type: "text", title: { show: false, level: 1 }, ownership: { default: owner }, text: { format: HTML, content } });
 
-    // Separate player document: the Mission Brief + the Field Dossier handout.
+    // A folder is the "package" that holds the whole briefing's documents.
+    const folder = await Folder.create({ name: base, type: "JournalEntry", color: accent });
+    const fid = folder.id;
+
+    // Separate player document: Mission Brief + Field Dossier handout.
     const playerEntry = await JournalEntry.create({
-      name: `${base} [Player]`,
-      ownership: { default: O.OBSERVER },
-      flags,
+      name: `${base} [Player]`, folder: fid, ownership: { default: O.OBSERVER }, flags,
       pages: [
         page("Mission Brief", wrap(briefHTML(bpn, ART)), O.OBSERVER),
         page("Field Dossier", wrap(fieldDossierHTML(bpn, ART)), O.OBSERVER)
@@ -188,17 +191,31 @@ export class BlueprintNewsApp extends HandlebarsApplicationMixin(ApplicationV2) 
     });
 
     // Separate GM-only document, linked back to the player document.
-    const gmEntry = await JournalEntry.create({
-      name: `${base} [GM]`,
-      ownership: { default: O.NONE },
-      flags,
-      pages: [
-        page("GM Dossier", wrap(dossierHTML(bpn, ART)) + `<p class="bpn-rolls">Player document: @UUID[${playerEntry.uuid}]{${base} [Player]}</p>`, O.NONE)
-      ]
+    await JournalEntry.create({
+      name: `${base} [GM]`, folder: fid, ownership: { default: O.NONE }, flags,
+      pages: [page("GM Dossier", wrap(dossierHTML(bpn, ART)) + `<p class="bpn-rolls">Player document: @UUID[${playerEntry.uuid}]{${base} [Player]}</p>`, O.NONE)]
     });
 
-    ui.notifications.info(`Created "${base}": a player document (Brief + Field Dossier) and a separate GM document.`);
-    gmEntry.sheet?.render(true);
+    // One character-sheet document per NPC (player handout, portrait + sheet).
+    const npcEntries = bpn.cast.map((npc) => ({
+      name: npc.name, folder: fid,
+      ownership: { default: O.OBSERVER },
+      flags: { [MODULE_ID]: { kind: "npc", seed: npc.seed, bpn: bpn.seed } },
+      pages: [page("Character Sheet", wrap(npcCardHTML(npc, { artMode: "img", accent })), O.OBSERVER)]
+    }));
+
+    // One card document per item (player handout, icon + description).
+    const itemEntries = bpn.otem.map((item) => ({
+      name: item.name, folder: fid,
+      ownership: { default: O.OBSERVER },
+      flags: { [MODULE_ID]: { kind: "otem", seed: item.seed, bpn: bpn.seed } },
+      pages: [page(item.name, wrap(itemCardHTML(item, { artMode: "img", accent })), O.OBSERVER)]
+    }));
+
+    await JournalEntry.createDocuments([...npcEntries, ...itemEntries]);
+
+    ui.notifications.info(`Created package "${base}": player + GM documents, ${bpn.cast.length} NPC sheets and ${bpn.otem.length} item cards in a folder.`);
+    playerEntry.sheet?.render(true);
   }
 
   static async #onChat() {

@@ -39,6 +39,44 @@ export const DETAIL = {
     "Plans to loot the site the moment the shooting starts.",
     "Is the actual target the GM is steering the mission toward."
   ],
+  npcBuilds: [
+    "tall and gaunt", "short and wiry", "broad and scarred", "lean and twitchy",
+    "heavyset and unhurried", "compact and precise", "stooped and tired", "rangy and restless"
+  ],
+  npcFeatures: [
+    "a battered breather mask", "a mirrored visor", "a shaved, tattooed scalp",
+    "a long oilcloth coat", "a crude augmetic eye", "cropped iron-grey hair",
+    "a jaw brace and old burns", "corporate-neat hair and a dead stare",
+    "a hood pulled low", "a wired earpiece they keep touching"
+  ],
+  npcHabits: [
+    "never stops watching the exits", "talks too fast when cornered",
+    "keeps one hand near a concealed weapon", "quotes regulations at everyone",
+    "won't make eye contact", "smiles at exactly the wrong moments",
+    "flinches at every comms burst", "counts the squad's gear without thinking"
+  ],
+  npcSignificance: [
+    "Holds the access the squad needs to move at all.",
+    "Knows the layout better than the map command supplied.",
+    "Can vouch for the squad — or burn them with one word.",
+    "Is the only working line back to the contact.",
+    "Controls who gets in and out of the site.",
+    "Has eyes on the objective right now.",
+    "Is the loose thread the whole job hangs on.",
+    "Will be the first casualty if things go loud."
+  ],
+
+  /* ---- item descriptions ---- */
+  otemDescriptions: [
+    "Standard-issue casing, non-standard contents — somebody went to trouble over this.",
+    "Looks ordinary until you notice the tamper seals have been replaced twice.",
+    "Heavier than it should be, and warm to the touch.",
+    "Marked with a department code that was retired years ago.",
+    "Scuffed and field-worn, clearly passed through several hands.",
+    "Pristine, sealed, and very obviously expensive.",
+    "Jury-rigged from three other things that were never meant to meet.",
+    "Quiet now, but the indicator light says it is still doing something."
+  ],
 
   /* ---- OTEM (items & equipment) ---- */
   otemNames: [

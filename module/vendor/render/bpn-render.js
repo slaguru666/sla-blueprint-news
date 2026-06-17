@@ -12,8 +12,8 @@
  */
 
 import {
-  crestSVG, bannerSVG, portraitSVG, siteMapSVG,
-  crestDataURI, bannerDataURI, portraitDataURI, siteMapDataURI
+  crestSVG, bannerSVG, portraitSVG, siteMapSVG, npcPortraitSVG, itemIconSVG,
+  crestDataURI, bannerDataURI, portraitDataURI, siteMapDataURI, npcPortraitDataURI, itemIconDataURI
 } from "../art/bpn-art.js";
 
 function esc(value) {
@@ -125,18 +125,34 @@ export function briefHTML(bpn, { art = true, artMode = "inline" } = {}) {
    are cleared to know, with a schematic site map. The GM-only secrets for the
    same entries live in the GM Dossier. */
 
-function castRow(n) {
-  return `<div class="bpn-detail-item">
-    <div class="bpn-detail-item__name">${esc(n.name)}</div>
-    <div class="bpn-detail-item__role">${esc(n.role)}</div>
-    <div class="bpn-detail-item__line">${esc(n.player)}</div>
+/** A simple NPC character-sheet card: portrait, who they are, why they matter. */
+export function npcCardHTML(npc, { artMode = "inline", accent = "#9fb0c4" } = {}) {
+  const art = artMode === "img"
+    ? `<img src="${npcPortraitDataURI(npc, { size: 168, accent })}" alt="${esc(npc.name)}">`
+    : npcPortraitSVG(npc, { size: 168, accent });
+  return `<div class="bpn-npc-card">
+    <div class="bpn-npc-card__art">${art}</div>
+    <div class="bpn-npc-card__body">
+      <div class="bpn-npc-card__name">${esc(npc.name)}</div>
+      <div class="bpn-npc-card__role">${esc(npc.role)} · ${esc(npc.disposition)}</div>
+      <p class="bpn-npc-card__desc">${esc(npc.description)}</p>
+      <div class="bpn-npc-card__sig"><span class="bpn-label">Why they matter</span>${esc(npc.significance)}</div>
+    </div>
   </div>`;
 }
 
-function otemRow(o) {
-  return `<div class="bpn-detail-item">
-    <div class="bpn-detail-item__name">${esc(o.name)}</div>
-    <div class="bpn-detail-item__line">${esc(o.player)}</div>
+/** A simple item card: line-art icon, what it is, a description. */
+export function itemCardHTML(item, { artMode = "inline", accent = "#9fb0c4" } = {}) {
+  const art = artMode === "img"
+    ? `<img src="${itemIconDataURI(item, { size: 120, accent })}" alt="${esc(item.name)}">`
+    : itemIconSVG(item, { size: 120, accent });
+  return `<div class="bpn-item-card">
+    <div class="bpn-item-card__art">${art}</div>
+    <div class="bpn-item-card__body">
+      <div class="bpn-item-card__name">${esc(item.name)}</div>
+      <p class="bpn-item-card__desc">${esc(item.description)}</p>
+      <div class="bpn-item-card__note">${esc(item.player)}</div>
+    </div>
   </div>`;
 }
 
@@ -163,11 +179,11 @@ export function fieldDossierHTML(bpn, { artMode = "inline" } = {}) {
     <div class="bpn-body">
       <section>
         <h2 class="bpn-section__title">Cast on the Ground</h2>
-        <div class="bpn-detail-list">${bpn.cast.map(castRow).join("")}</div>
+        <div class="bpn-card-grid">${bpn.cast.map((n) => npcCardHTML(n, { artMode, accent: c.accent })).join("")}</div>
       </section>
       <section>
         <h2 class="bpn-section__title">OTEM · Items &amp; Equipment</h2>
-        <div class="bpn-detail-list">${bpn.otem.map(otemRow).join("")}</div>
+        <div class="bpn-card-grid bpn-card-grid--items">${bpn.otem.map((o) => itemCardHTML(o, { artMode, accent: c.accent })).join("")}</div>
       </section>
       <section>
         <h2 class="bpn-section__title">Key Locations</h2>

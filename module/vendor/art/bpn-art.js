@@ -332,6 +332,113 @@ export function portraitSVG(bpn, { size = 120 } = {}) {
 }
 
 /* ------------------------------------------------------------------------ */
+/* NPC PORTRAIT — a simple black-and-white "ident" mugshot, procedural and    */
+/* deterministic per NPC. Stencil ink line-art: head, hair/hood/helmet, eyes  */
+/* or visor, mouth or breather, an accessory, light hatch shading. Greyscale  */
+/* only; the colour band shows just as a thin tag bar.                        */
+/* ------------------------------------------------------------------------ */
+
+export function npcPortraitSVG(npc, { size = 168, accent = "#9fb0c4" } = {}) {
+  const seed = npc?.seed ?? npc?.name ?? "npc";
+  const uid = String(seed).replace(/[^A-Za-z0-9]/g, "") + "n";
+  const rng = rngFor(seed, "face");
+  const ink = "#e9eef4";
+  const dark = "#0d1117";
+  const skin = "#1b212b";
+  const stroke = (w = 2) => `fill="none" stroke="${ink}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
+
+  const choose = (arr) => arr[Math.floor(rng() * arr.length)];
+  const rx = choose([18, 20, 22]);
+  const ry = choose([25, 28, 32]);
+  const top = choose(["hairShort", "hairCrop", "bald", "hood", "helmet", "cap"]);
+  const eyes = choose(["plain", "visor", "goggles", "augmetic"]);
+  const mouth = choose(["neutral", "grim", "breather", "smirk"]);
+  const extra = choose(["none", "earpiece", "scar", "collar"]);
+  const cx = 84, cy = 78; // head centre in a 168x190 space
+
+  const head = `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${skin}" stroke="${ink}" stroke-width="2"/>`;
+  const jaw = `<path d="M${cx - rx + 2} ${cy + ry - 8} Q${cx} ${cy + ry + 6} ${cx + rx - 2} ${cy + ry - 8}" ${stroke(1.5)}/>`;
+
+  let hair = "";
+  if (top === "hairShort") hair = `<path d="M${cx - rx - 2} ${cy - 6} Q${cx} ${cy - ry - 12} ${cx + rx + 2} ${cy - 6} Q${cx + rx - 6} ${cy - ry + 4} ${cx} ${cy - ry + 2} Q${cx - rx + 6} ${cy - ry + 4} ${cx - rx - 2} ${cy - 6} Z" fill="${ink}" opacity="0.9"/>`;
+  else if (top === "hairCrop") hair = `<path d="M${cx - rx} ${cy - ry + 8} Q${cx} ${cy - ry - 4} ${cx + rx} ${cy - ry + 8}" ${stroke(5)}/>`;
+  else if (top === "bald") hair = `<path d="M${cx - 8} ${cy - ry + 4} Q${cx} ${cy - ry - 2} ${cx + 8} ${cy - ry + 4}" ${stroke(1)} opacity="0.5"/>`;
+  else if (top === "hood") hair = `<path d="M${cx - rx - 10} ${cy + 8} Q${cx - rx - 12} ${cy - ry - 18} ${cx} ${cy - ry - 20} Q${cx + rx + 12} ${cy - ry - 18} ${cx + rx + 10} ${cy + 8}" ${stroke(2.5)}/>`;
+  else if (top === "helmet") hair = `<path d="M${cx - rx - 3} ${cy - 2} Q${cx} ${cy - ry - 14} ${cx + rx + 3} ${cy - 2}" ${stroke(3)}/><line x1="${cx}" y1="${cy - ry - 10}" x2="${cx}" y2="${cy - 4}" ${stroke(1.5)}/>`;
+  else if (top === "cap") hair = `<path d="M${cx - rx - 6} ${cy - ry + 10} H${cx + rx + 2} Q${cx} ${cy - ry - 8} ${cx - rx - 6} ${cy - ry + 10} Z" fill="${ink}" opacity="0.85"/>`;
+
+  const ey = cy - 4;
+  let eyeMarks = "";
+  if (eyes === "plain") eyeMarks = `<line x1="${cx - 13}" y1="${ey}" x2="${cx - 6}" y2="${ey}" ${stroke(2)}/><line x1="${cx + 6}" y1="${ey}" x2="${cx + 13}" y2="${ey}" ${stroke(2)}/><line x1="${cx - 14}" y1="${ey - 6}" x2="${cx - 5}" y2="${ey - 7}" ${stroke(1.2)}/><line x1="${cx + 5}" y1="${ey - 7}" x2="${cx + 14}" y2="${ey - 6}" ${stroke(1.2)}/>`;
+  else if (eyes === "visor") eyeMarks = `<rect x="${cx - 16}" y="${ey - 4}" width="32" height="8" rx="4" fill="${dark}" stroke="${ink}" stroke-width="2"/><line x1="${cx - 12}" y1="${ey}" x2="${cx + 12}" y2="${ey}" stroke="${ink}" stroke-width="1" opacity="0.5"/>`;
+  else if (eyes === "goggles") eyeMarks = `<circle cx="${cx - 9}" cy="${ey}" r="5.5" ${stroke(2)}/><circle cx="${cx + 9}" cy="${ey}" r="5.5" ${stroke(2)}/><line x1="${cx - 3.5}" y1="${ey}" x2="${cx + 3.5}" y2="${ey}" ${stroke(2)}/>`;
+  else eyeMarks = `<line x1="${cx - 13}" y1="${ey}" x2="${cx - 6}" y2="${ey}" ${stroke(2)}/><rect x="${cx + 5}" y="${ey - 4}" width="10" height="8" rx="1.5" fill="${dark}" stroke="${ink}" stroke-width="2"/><line x1="${cx + 7}" y1="${ey}" x2="${cx + 13}" y2="${ey}" stroke="${ink}" stroke-width="1"/>`;
+
+  const nose = `<path d="M${cx} ${ey + 4} L${cx - 3} ${cy + 8} L${cx + 2} ${cy + 8}" ${stroke(1.4)}/>`;
+
+  const my = cy + 17;
+  let mouthMark = "";
+  if (mouth === "neutral") mouthMark = `<line x1="${cx - 7}" y1="${my}" x2="${cx + 7}" y2="${my}" ${stroke(1.8)}/>`;
+  else if (mouth === "grim") mouthMark = `<path d="M${cx - 8} ${my - 1} Q${cx} ${my + 3} ${cx + 8} ${my - 1}" ${stroke(1.8)}/>`;
+  else if (mouth === "smirk") mouthMark = `<path d="M${cx - 7} ${my + 1} Q${cx} ${my - 1} ${cx + 8} ${my - 3}" ${stroke(1.8)}/>`;
+  else mouthMark = `<rect x="${cx - 12}" y="${my - 7}" width="24" height="15" rx="4" fill="${dark}" stroke="${ink}" stroke-width="2"/><line x1="${cx - 12}" y1="${my}" x2="${cx - 22}" y2="${my - 4}" ${stroke(1.5)}/><line x1="${cx + 12}" y1="${my}" x2="${cx + 22}" y2="${my - 4}" ${stroke(1.5)}/><circle cx="${cx}" cy="${my}" r="2" fill="${ink}"/>`;
+
+  let extraMark = "";
+  if (extra === "earpiece") extraMark = `<circle cx="${cx + rx - 1}" cy="${ey + 4}" r="3" ${stroke(1.5)}/><line x1="${cx + rx + 1}" y1="${ey + 6}" x2="${cx + rx + 6}" y2="${ey + 14}" ${stroke(1.5)}/>`;
+  else if (extra === "scar") extraMark = `<line x1="${cx - 12}" y1="${cy - 14}" x2="${cx - 4}" y2="${cy + 6}" ${stroke(1.5)}/>`;
+  else if (extra === "collar") extraMark = `<path d="M${cx - 22} 168 L${cx - 8} ${cy + ry + 6} M${cx + 22} 168 L${cx + 8} ${cy + ry + 6}" ${stroke(2)}/>`;
+
+  // light hatch shading down the right cheek
+  const hatch = Array.from({ length: 4 }, (_, i) =>
+    `<line x1="${cx + 6 + i * 3}" y1="${cy - 6 + i * 2}" x2="${cx + 10 + i * 3}" y2="${cy + 10 + i * 2}" stroke="${ink}" stroke-width="1" opacity="0.18"/>`).join("");
+
+  const shoulders = `<path d="M22 190 V164 C22 142 48 130 84 130 C120 130 146 142 146 164 V190 Z" fill="${skin}" stroke="${ink}" stroke-width="2"/>`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 190" width="${size}" height="${Math.round(size * 190 / 168)}" role="img" aria-label="${npc?.name ?? "ident"} portrait">
+  <rect x="2" y="2" width="164" height="186" rx="10" fill="${dark}" stroke="${rgba(accent, 0.45)}" stroke-width="2"/>
+  <rect x="2" y="2" width="164" height="16" rx="10" fill="${rgba(accent, 0.18)}"/>
+  <text x="10" y="14" font-family="Roboto Mono, monospace" font-size="9" letter-spacing="2" fill="${rgba(accent, 0.85)}">IDENT</text>
+  ${shoulders}
+  ${extra === "collar" ? extraMark : ""}
+  ${head}${jaw}${hatch}
+  ${hair}
+  ${eyeMarks}${nose}${mouthMark}
+  ${extra !== "collar" ? extraMark : ""}
+  <line x1="10" y1="178" x2="158" y2="178" stroke="${rgba(accent, 0.3)}" stroke-width="1"/>
+</svg>`;
+}
+
+/* ------------------------------------------------------------------------ */
+/* ITEM ICON — simple black-and-white line-art keyed to the OTEM category.    */
+/* ------------------------------------------------------------------------ */
+
+export function itemIconSVG(item, { size = 120, accent = "#9fb0c4" } = {}) {
+  const ink = "#e9eef4";
+  const dark = "#0d1117";
+  const s = (w = 2.4) => `fill="none" stroke="${ink}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"`;
+  const cat = item?.category ?? "slate";
+  const glyphs = {
+    slate: `<rect x="34" y="24" width="32" height="52" rx="4" ${s()}/><line x1="40" y1="36" x2="60" y2="36" ${s(1.6)}/><line x1="40" y1="44" x2="60" y2="44" ${s(1.6)}/><line x1="40" y1="52" x2="54" y2="52" ${s(1.6)}/><circle cx="50" cy="68" r="2.2" fill="${ink}"/>`,
+    canister: `<rect x="38" y="26" width="24" height="48" rx="6" ${s()}/><ellipse cx="50" cy="26" rx="12" ry="4" ${s(1.6)}/><line x1="38" y1="46" x2="62" y2="46" ${s(1.6)}/><rect x="44" y="18" width="12" height="8" rx="2" ${s(1.6)}/>`,
+    weapon: `<path d="M28 44 H64 V54 H50 L46 64 H40 L42 54 H28 Z" ${s()}/><line x1="34" y1="44" x2="34" y2="38" ${s(1.6)}/>`,
+    chip: `<rect x="34" y="34" width="32" height="32" rx="3" ${s()}/><rect x="42" y="42" width="16" height="16" rx="2" ${s(1.6)}/><line x1="38" y1="30" x2="38" y2="34" ${s(1.4)}/><line x1="50" y1="30" x2="50" y2="34" ${s(1.4)}/><line x1="62" y1="30" x2="62" y2="34" ${s(1.4)}/><line x1="38" y1="66" x2="38" y2="70" ${s(1.4)}/><line x1="62" y1="66" x2="62" y2="70" ${s(1.4)}/>`,
+    crate: `<rect x="28" y="32" width="44" height="36" rx="3" ${s()}/><line x1="28" y1="50" x2="72" y2="50" ${s(1.6)}/><line x1="50" y1="32" x2="50" y2="68" ${s(1.6)}/><circle cx="34" cy="38" r="1.8" fill="${ink}"/><circle cx="66" cy="38" r="1.8" fill="${ink}"/>`,
+    bug: `<ellipse cx="50" cy="52" rx="10" ry="14" ${s()}/><circle cx="50" cy="36" r="5" ${s(1.6)}/><line x1="47" y1="32" x2="44" y2="26" ${s(1.4)}/><line x1="53" y1="32" x2="56" y2="26" ${s(1.4)}/><line x1="40" y1="46" x2="30" y2="42" ${s(1.4)}/><line x1="40" y1="56" x2="30" y2="58" ${s(1.4)}/><line x1="60" y1="46" x2="70" y2="42" ${s(1.4)}/><line x1="60" y1="56" x2="70" y2="58" ${s(1.4)}/>`,
+    component: `<circle cx="50" cy="50" r="14" ${s()}/><circle cx="50" cy="50" r="5" ${s(1.6)}/><g stroke="${ink}" stroke-width="2.4" stroke-linecap="round">${Array.from({ length: 8 }, (_, i) => { const a = i / 8 * Math.PI * 2; return `<line x1="${50 + Math.cos(a) * 14}" y1="${50 + Math.sin(a) * 14}" x2="${50 + Math.cos(a) * 19}" y2="${50 + Math.sin(a) * 19}"/>`; }).join("")}</g>`,
+    relay: `<line x1="50" y1="30" x2="50" y2="70" ${s()}/><rect x="44" y="68" width="12" height="6" ${s(1.6)}/><path d="M40 34 Q50 24 60 34" ${s(1.6)}/><path d="M36 30 Q50 16 64 30" ${s(1.4)}/><circle cx="50" cy="30" r="2.5" fill="${ink}"/>`,
+    kit: `<rect x="30" y="36" width="40" height="30" rx="4" ${s()}/><line x1="42" y1="36" x2="42" y2="30" ${s(1.6)}/><line x1="58" y1="36" x2="58" y2="30" ${s(1.6)}/><line x1="50" y1="44" x2="50" y2="58" ${s(2)}/><line x1="43" y1="51" x2="57" y2="51" ${s(2)}/>`,
+    drone: `<rect x="44" y="44" width="12" height="12" rx="2" ${s()}/><line x1="44" y1="44" x2="32" y2="32" ${s(1.6)}/><line x1="56" y1="44" x2="68" y2="32" ${s(1.6)}/><line x1="44" y1="56" x2="32" y2="68" ${s(1.6)}/><line x1="56" y1="56" x2="68" y2="68" ${s(1.6)}/><circle cx="30" cy="30" r="4" ${s(1.6)}/><circle cx="70" cy="30" r="4" ${s(1.6)}/><circle cx="30" cy="70" r="4" ${s(1.6)}/><circle cx="70" cy="70" r="4" ${s(1.6)}/>`,
+    key: `<circle cx="38" cy="50" r="10" ${s()}/><line x1="48" y1="50" x2="72" y2="50" ${s()}/><line x1="66" y1="50" x2="66" y2="58" ${s(1.8)}/><line x1="72" y1="50" x2="72" y2="60" ${s(1.8)}/>`,
+    card: `<rect x="28" y="36" width="44" height="30" rx="3" ${s()}/><rect x="33" y="42" width="12" height="14" rx="1.5" ${s(1.6)}/><line x1="50" y1="44" x2="66" y2="44" ${s(1.4)}/><line x1="50" y1="50" x2="66" y2="50" ${s(1.4)}/><line x1="50" y1="56" x2="60" y2="56" ${s(1.4)}/>`
+  };
+  const inner = glyphs[cat] ?? glyphs.slate;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="${size}" height="${size}" role="img" aria-label="${item?.name ?? "item"} icon">
+  <rect x="2" y="2" width="96" height="96" rx="10" fill="${dark}" stroke="${rgba(accent, 0.45)}" stroke-width="2"/>
+  ${inner}
+</svg>`;
+}
+
+/* ------------------------------------------------------------------------ */
 /* SITE MAP — a schematic, non-photorealistic sector diagram for the Field   */
 /* Dossier. Numbered nodes (one per location) wired along a route over a     */
 /* faint grid, with an entry marker. Labels live in the dossier list.        */
@@ -396,4 +503,10 @@ export function portraitDataURI(bpn, opts) {
 }
 export function siteMapDataURI(bpn, opts) {
   return `data:image/svg+xml;utf8,${encodeURIComponent(siteMapSVG(bpn, opts))}`;
+}
+export function npcPortraitDataURI(npc, opts) {
+  return `data:image/svg+xml;utf8,${encodeURIComponent(npcPortraitSVG(npc, opts))}`;
+}
+export function itemIconDataURI(item, opts) {
+  return `data:image/svg+xml;utf8,${encodeURIComponent(itemIconSVG(item, opts))}`;
 }

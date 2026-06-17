@@ -1,7 +1,13 @@
 # SLA Blueprint News (Foundry VTT module)
 
 Generate SLA Industries **BPN** mission briefings inside Foundry. Each briefing
-creates **two separate journal entries**:
+creates a **folder ("package")** containing several separate journal entries:
+
+- one **character-sheet entry per NPC** — a black-and-white "ident" portrait,
+  who they are, their disposition, and why they matter (player handout).
+- one **card entry per OTEM item** — a line-art icon and a description.
+
+plus the two core documents:
 
 - **`… [Player]`** (ownership *Observer*) — a player document with two pages:
   - **Mission Brief** — the official corporate dispatch.
